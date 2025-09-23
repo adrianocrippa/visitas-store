@@ -1,30 +1,60 @@
 {
-  "name": "visitas-store",
-  "version": "0.1.0",
+  "name": "catalog-pro-platform",
+  "version": "2.0.0",
+  "description": "Plataforma multi-usuário para criação de catálogos de produtos a partir de planilhas Excel",
   "private": true,
   "dependencies": {
-    "@supabase/supabase-js": "^2.50.0",
-    "@testing-library/dom": "^10.4.0",
-    "@testing-library/jest-dom": "^6.6.3",
-    "@testing-library/react": "^16.3.0",
+    "@supabase/supabase-js": "^2.38.0",
+    "@testing-library/jest-dom": "^5.16.4",
+    "@testing-library/react": "^13.3.0",
     "@testing-library/user-event": "^13.5.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "react-hook-form": "^7.57.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.8.0",
     "react-scripts": "5.0.1",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "xlsx": "^0.18.5",
+    "file-saver": "^2.0.5",
+    "jspdf": "^2.5.1",
+    "html2canvas": "^1.4.1",
+    "chart.js": "^4.2.1",
+    "react-chartjs-2": "^5.2.0",
+    "date-fns": "^2.29.3",
+    "react-dropzone": "^14.2.3",
+    "react-hot-toast": "^2.4.1",
+    "clsx": "^1.2.1",
+    "tailwindcss": "^3.2.7",
+    "@headlessui/react": "^1.7.13",
+    "@heroicons/react": "^2.0.16"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "dev": "react-scripts start",
+    "build:prod": "NODE_ENV=production react-scripts build",
+    "analyze": "npm run build && npx bundle-analyzer build/static/js/*.js",
+    "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
+    "lint:fix": "eslint src --ext .js,.jsx,.ts,.tsx --fix",
+    "format": "prettier --write src/**/*.{js,jsx,ts,tsx,json,css,md}",
+    "type-check": "tsc --noEmit",
+    "db:setup": "echo 'Execute o arquivo database_setup.sql no Supabase SQL Editor'",
+    "db:migrate": "echo 'Migrations serão executadas via Supabase Dashboard'",
+    "deploy": "npm run build && vercel --prod",
+    "deploy:preview": "npm run build && vercel"
   },
   "eslintConfig": {
     "extends": [
       "react-app",
       "react-app/jest"
-    ]
+    ],
+    "rules": {
+      "no-unused-vars": "warn",
+      "no-console": "warn",
+      "prefer-const": "error",
+      "no-var": "error"
+    }
   },
   "browserslist": {
     "production": [
@@ -37,5 +67,44 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  }
+  },
+  "devDependencies": {
+    "@types/file-saver": "^2.0.5",
+    "@types/react": "^18.0.28",
+    "@types/react-dom": "^18.0.11",
+    "autoprefixer": "^10.4.14",
+    "postcss": "^8.4.21",
+    "prettier": "^2.8.4",
+    "typescript": "^4.9.5",
+    "eslint": "^8.36.0",
+    "eslint-config-prettier": "^8.7.0",
+    "eslint-plugin-prettier": "^4.2.1"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/adrianocrippa/catalog-pro-platform.git"
+  },
+  "keywords": [
+    "catalog",
+    "excel",
+    "products",
+    "react",
+    "supabase",
+    "multi-tenant",
+    "saas",
+    "e-commerce",
+    "business-tools"
+  ],
+  "author": {
+    "name": "Adriano Crippa",
+    "email": "adriano@exemplo.com",
+    "url": "https://home.adrianocrippa.com"
+  },
+  "license": "MIT",
+  "homepage": "https://catalog-pro.vercel.app",
+  "proxy": "http://localhost:3001"
 }
