@@ -1,6 +1,6 @@
 {
-  "name": "catalog-pro-platform",
-  "version": "2.0.0",
+  "name": "visitas-store",
+  "version": "0.1.0",
   "private": true,
   "dependencies": {
     "@supabase/supabase-js": "^2.38.0",
@@ -33,9 +33,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "engines": {
-    "node": ">=16.0.0",
-    "npm": ">=8.0.0"
   }
 }
