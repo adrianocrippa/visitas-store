@@ -1,8 +1,3 @@
-// =====================================================
-// APP PRINCIPAL COM ROTEAMENTO E AUTENTICAÇÃO
-// =====================================================
-// src/App.js - SUBSTITUA o arquivo existente
-
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -26,6 +21,7 @@ import VisitasPage from './components/Visits/VisitasPage';
 
 // Estilos
 import './App.css';
+
 
 // =====================================================
 // COMPONENTE DE ROTA PROTEGIDA
