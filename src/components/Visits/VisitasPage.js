@@ -1,6 +1,6 @@
 import React from 'react';
-import VisitaForm from '../../VisitaForm';
-import VisitaList from '../../VisitaList';
+import VisitaForm from './VisitaForm';
+import VisitaList from './VisitaList';
 
 const VisitasPage = () => {
   return (
