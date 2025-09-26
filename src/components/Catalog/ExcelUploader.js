@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { processExcelFile } from '../../utils/excelProcessor';
+import { generateCatalogFiles } from '../../utils/catalogGenerator';
 
 const ExcelUploader = () => {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [processingStep, setProcessingStep] = useState('');
   const { user } = useAuth();
 
   const handleFileChange = (e) => {
@@ -21,16 +24,35 @@ const ExcelUploader = () => {
     if (!file) return;
 
     setLoading(true);
+    setResult(null);
+    
     try {
-      // Simular processamento por enquanto
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Passo 1: Processar Excel
+      setProcessingStep('Processando planilha Excel...');
+      const excelResult = await processExcelFile(file);
       
+      if (!excelResult.success) {
+        throw new Error(excelResult.error);
+      }
+
+      // Passo 2: Gerar arquivos HTML
+      setProcessingStep('Gerando catálogo HTML...');
+      const catalogResult = await generateCatalogFiles(excelResult.products, user.id);
+      
+      if (!catalogResult.success) {
+        throw new Error(catalogResult.error);
+      }
+
+      // Passo 3: Sucesso
       setResult({
         success: true,
-        catalogUrl: `https://catalog-adriano.netlify.app/catalog/${user.id}`,
-        productsCount: 84,
-        message: 'Catálogo gerado com sucesso!'
-      } );
+        catalogUrl: catalogResult.indexUrl,
+        productsCount: excelResult.totalProducts,
+        categories: excelResult.categories,
+        message: 'Catálogo gerado com sucesso!',
+        files: catalogResult.files
+      });
+      
     } catch (error) {
       setResult({
         success: false,
@@ -38,6 +60,7 @@ const ExcelUploader = () => {
       });
     } finally {
       setLoading(false);
+      setProcessingStep('');
     }
   };
 
@@ -74,13 +97,12 @@ const ExcelUploader = () => {
         </div>
 
         {/* Upload Button */}
-        {file && (
+        {file && !loading && (
           <button
             onClick={handleUpload}
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
           >
-            {loading ? 'Processando...' : 'Gerar Catálogo'}
+            Gerar Catálogo
           </button>
         )}
 
@@ -89,7 +111,7 @@ const ExcelUploader = () => {
           <div className="text-center py-4">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             <p className="mt-2 text-sm text-gray-600">
-              Processando sua planilha e gerando catálogo...
+              {processingStep || 'Processando...'}
             </p>
           </div>
         )}
@@ -116,12 +138,20 @@ const ExcelUploader = () => {
                 {result.success && (
                   <div className="mt-2 text-sm text-green-700">
                     <p>✅ {result.productsCount} produtos processados</p>
-                    <p className="mt-1">
-                      <strong>URL do catálogo:</strong>{' '}
-                      <a href={result.catalogUrl} target="_blank" rel="noopener noreferrer" className="underline">
-                        {result.catalogUrl}
+                    <p>✅ {result.categories?.length} categorias encontradas</p>
+                    <div className="mt-3 space-y-2">
+                      <div>
+                        <strong>Catálogo gerado:</strong>
+                      </div>
+                      <a 
+                        href={result.catalogUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="inline-block bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm"
+                      >
+                        🔗 Abrir Catálogo
                       </a>
-                    </p>
+                    </div>
                   </div>
                 )}
               </div>
