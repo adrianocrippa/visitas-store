@@ -37,29 +37,9 @@ export const AuthProvider = ({ children }) => {
   // =====================================================
 
   useEffect(() => {
-    // Verificar usuário atual ao carregar
-    checkUser();
+  checkUser();
+}, [checkUser]);
 
-    // Listener para mudanças de autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
-        
-        if (event === 'SIGNED_IN' && session?.user) {
-          await loadUserData(session.user);
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null);
-          setUserProfile(null);
-        }
-        
-        setLoading(false);
-      }
-    );
-
-    return () => {
-      subscription?.unsubscribe();
-    };
-  }, []);
 
   // =====================================================
   // FUNÇÕES AUXILIARES
