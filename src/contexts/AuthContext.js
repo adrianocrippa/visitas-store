@@ -1,9 +1,8 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../supabase';
 
-// Criar o contexto
 const AuthContext = createContext();
 
-// Hook para usar o contexto
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -12,35 +11,49 @@ export const useAuth = () => {
   return context;
 };
 
-// Provider do contexto
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Função de login simples
-  const login = async (email, password) => {
-    setLoading(true);
-    try {
-      // Simular login por enquanto
-      console.log('Login:', email, password);
-      setUser({ email, id: '123' });
-      return { success: true };
-    } catch (error) {
-      console.error('Erro no login:', error);
-      return { success: false, error: error.message };
-    } finally {
+  // Verificar usuário atual
+  useEffect(() => {
+    // Verificar sessão atual
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user || null);
       setLoading(false);
-    }
-  };
+    };
 
-  // Função de registro simples
+    getSession();
+
+    // Escutar mudanças de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setUser(session?.user || null);
+        setLoading(false);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Função de registro
   const register = async (email, password, companyName) => {
     setLoading(true);
     try {
-      // Simular registro por enquanto
-      console.log('Register:', email, password, companyName);
-      setUser({ email, id: '123', companyName });
-      return { success: true };
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            company_name: companyName
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      return { success: true, data };
     } catch (error) {
       console.error('Erro no registro:', error);
       return { success: false, error: error.message };
@@ -49,9 +62,32 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Função de login
+  const login = async (email, password) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) throw error;
+
+      return { success: true, data };
+    } catch (error) {
+      console.error('Erro no login:', error);
+      return { success: false, error: error.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Função de logout
-  const logout = () => {
-    setUser(null);
+  const logout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Erro no logout:', error);
+    }
   };
 
   const value = {
