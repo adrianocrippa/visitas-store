@@ -1,5 +1,20 @@
 import * as XLSX from 'xlsx';
 
+// Função de debug para mostrar mapeamento de colunas
+const debugColumnMapping = (sheetName, headers, columnMap, sampleRow) => {
+  console.log(`=== DEBUG SHEET: ${sheetName} ===`);
+  console.log('Headers encontrados:', headers);
+  console.log('Mapeamento de colunas:', columnMap);
+  if (sampleRow) {
+    console.log('Exemplo de dados da primeira linha:');
+    Object.keys(columnMap).forEach(key => {
+      const colIndex = columnMap[key];
+      console.log(`  ${key}: coluna ${colIndex} = "${sampleRow[colIndex]}"`);
+    });
+  }
+  console.log('================================');
+};
+
 export const processExcelFile = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -14,6 +29,8 @@ export const processExcelFile = (file) => {
         
         // Processar cada aba
         workbook.SheetNames.forEach(sheetName => {
+          console.log(`\n🔍 Processando aba: ${sheetName}`);
+          
           const worksheet = workbook.Sheets[sheetName];
           const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
           
@@ -32,7 +49,12 @@ export const processExcelFile = (file) => {
             }
           }
           
-          if (headerRow === -1) return;
+          if (headerRow === -1) {
+            console.log(`❌ Cabeçalho não encontrado na aba ${sheetName}`);
+            return;
+          }
+          
+          console.log(`✅ Cabeçalho encontrado na linha ${headerRow + 1}`);
           
           const headers = jsonData[headerRow];
           const dataRows = jsonData.slice(headerRow + 1);
@@ -62,8 +84,13 @@ export const processExcelFile = (file) => {
             }
           });
           
+          // Debug do mapeamento
+          const sampleRow = dataRows.length > 0 ? dataRows[0] : null;
+          debugColumnMapping(sheetName, headers, columnMap, sampleRow);
+          
           // Processar dados
-          dataRows.forEach(row => {
+          let processedCount = 0;
+          dataRows.forEach((row, rowIndex) => {
             if (!row || row.length === 0) return;
             
             const description = row[columnMap.description];
@@ -72,6 +99,15 @@ export const processExcelFile = (file) => {
             const unitCost = parseFloat(row[columnMap.unitCost]) || 0;
             const retailPrice = parseFloat(row[columnMap.retailPrice]) || 0;
             const unitsPerCase = parseInt(row[columnMap.unitsPerCase]) || 1;
+            
+            // Debug dos primeiros 3 produtos
+            if (processedCount < 3) {
+              console.log(`\n📊 Produto ${processedCount + 1} (linha ${rowIndex + headerRow + 2}):`);
+              console.log(`  Nome: "${description}"`);
+              console.log(`  Unit Cost: "${row[columnMap.unitCost]}" → ${unitCost}`);
+              console.log(`  Retail Price: "${row[columnMap.retailPrice]}" → ${retailPrice}`);
+              console.log(`  Units per Case: "${row[columnMap.unitsPerCase]}" → ${unitsPerCase}`);
+            }
             
             // Calcular valores ausentes
             const caseCost = row[columnMap.caseCost] ? 
@@ -84,6 +120,13 @@ export const processExcelFile = (file) => {
               
             const margin = unitCost > 0 ? 
               Math.round((unitProfit / unitCost) * 100) : 0;
+            
+            // Debug dos cálculos dos primeiros 3 produtos
+            if (processedCount < 3) {
+              console.log(`  Case Cost: ${caseCost}`);
+              console.log(`  Unit Profit: ${unitProfit}`);
+              console.log(`  Margin: ${margin}%`);
+            }
             
             products.push({
               number: String(productNumber).padStart(3, '0'),
@@ -101,8 +144,13 @@ export const processExcelFile = (file) => {
             });
             
             productNumber++;
+            processedCount++;
           });
+          
+          console.log(`✅ ${processedCount} produtos processados na aba ${sheetName}`);
         });
+        
+        console.log(`\n🎉 TOTAL: ${products.length} produtos processados`);
         
         resolve({
           success: true,
@@ -112,6 +160,7 @@ export const processExcelFile = (file) => {
         });
         
       } catch (error) {
+        console.error('❌ Erro no processamento:', error);
         reject({
           success: false,
           error: error.message
