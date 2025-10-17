@@ -1,3 +1,6 @@
+// COLE ESTE CÓDIGO COMPLETO NO ARQUIVO:
+// https://github.com/adrianocrippa/visitas-store/blob/main/src/components/Catalog/CatalogViewer.js
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 
@@ -14,6 +17,11 @@ const CatalogViewer = () => {
         const data = localStorage.getItem(`catalog_${userId}`);
         if (data) {
           const catalog = JSON.parse(data);
+          console.log('📂 Catálogo carregado:', {
+            timestamp: catalog.timestamp,
+            generatedAt: catalog.generatedAt,
+            totalProducts: catalog.products.length
+          });
           setCatalogData(catalog);
         }
       } catch (error) {
@@ -24,6 +32,14 @@ const CatalogViewer = () => {
     };
 
     loadCatalog();
+    
+    // Recarregar quando a janela receber foco (útil após upload)
+    const handleFocus = () => {
+      loadCatalog();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, [userId]);
 
   const nextProduct = () => {
@@ -87,6 +103,9 @@ const CatalogViewer = () => {
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-600">
                 {currentProduct + 1} de {catalogData.products.length}
+              </span>
+              <span className="text-xs text-gray-400">
+                {new Date(catalogData.generatedAt).toLocaleString('pt-BR')}
               </span>
               <Link to="/dashboard" className="text-blue-600 hover:text-blue-700">
                 Dashboard
