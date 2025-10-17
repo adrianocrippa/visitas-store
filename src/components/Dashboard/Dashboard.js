@@ -1,6 +1,8 @@
 import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import ExcelUploader from '../Catalog/ExcelUploader';
+import PhotoUploader from './Catalog/PhotoUploader';
+import ExportPDFButton from './Catalog/ExportPDFButton';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -69,6 +71,21 @@ const Dashboard = () => {
                 </p>
               </div>
             </div>
+
+            {/* Seção de Fotos */}
+            <div className="mt-8">
+              <PhotoUploader />
+            </div>
+            
+            {/* Botão de PDF (se houver catálogo) */}
+            {catalogData && (
+              <div className="mt-4">
+                <ExportPDFButton 
+                  products={catalogData.products} 
+                  catalogName="Catalogo_2025"
+                />
+              </div>
+            )}
 
             {/* Sistema de Visitas */}
             <div className="bg-white rounded-lg shadow p-6">
