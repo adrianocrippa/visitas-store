@@ -36,13 +36,15 @@ export const processExcelFile = (file) => {
           
           // Encontrar linha de cabeçalho
           let headerRow = -1;
-          for (let i = 0; i < Math.min(5, jsonData.length); i++) {
+          for (let i = 0; i < Math.min(10, jsonData.length); i++) {
             const row = jsonData[i];
             if (row && row.some(cell => 
               cell && typeof cell === 'string' && 
               (cell.toLowerCase().includes('description') || 
                cell.toLowerCase().includes('item') ||
-               cell.toLowerCase().includes('produto'))
+               cell.toLowerCase().includes('produto') ||
+               cell.toLowerCase().includes('units') ||
+               cell.toLowerCase().includes('unités'))
             )) {
               headerRow = i;
               break;
@@ -59,27 +61,61 @@ export const processExcelFile = (file) => {
           const headers = jsonData[headerRow];
           const dataRows = jsonData.slice(headerRow + 1);
           
-          // Mapear colunas
+          // Mapear colunas com lógica corrigida
           const columnMap = {};
           headers.forEach((header, index) => {
             if (!header) return;
-            const headerStr = header.toString().toLowerCase();
+            const headerStr = header.toString().toLowerCase().trim();
             
-            if (headerStr.includes('description') || headerStr.includes('item')) {
+            // Description - priorizar "Item Description" ou similar
+            if ((headerStr.includes('item') && headerStr.includes('description')) || 
+                headerStr === 'description' ||
+                headerStr.includes('produto')) {
               columnMap.description = index;
-            } else if (headerStr.includes('barcode') || headerStr.includes('upc') || headerStr.includes('gtin')) {
+            } 
+            // Barcode
+            else if (headerStr.includes('barcode') || 
+                     headerStr.includes('upc') || 
+                     headerStr.includes('gtin')) {
               columnMap.barcode = index;
-            } else if (headerStr.includes('units') && headerStr.includes('case')) {
-              columnMap.unitsPerCase = index;
-            } else if (headerStr.includes('cost') && headerStr.includes('unit') && !headerStr.includes('case')) {
+            } 
+            // Units per case - CORRIGIDO: aceitar "Unités - Units" ou "Units/Case"
+            else if ((headerStr.includes('unités') || headerStr.includes('units')) && 
+                     !headerStr.includes('sales') && 
+                     !headerStr.includes('forecast')) {
+              if (!columnMap.unitsPerCase) { // Pegar a primeira ocorrência
+                columnMap.unitsPerCase = index;
+              }
+            } 
+            // Unit Cost
+            else if (headerStr.includes('cost') && 
+                     headerStr.includes('unit') && 
+                     !headerStr.includes('case')) {
               columnMap.unitCost = index;
-            } else if (headerStr.includes('cost') && headerStr.includes('case')) {
+            } 
+            // Case Cost
+            else if (headerStr.includes('cost') && headerStr.includes('case')) {
               columnMap.caseCost = index;
-            } else if (headerStr.includes('retail') || headerStr.includes('price')) {
+            } 
+            // Retail Price - CORRIGIDO: usar "Average market retail" ao invés de "Forecast Sales"
+            else if ((headerStr.includes('average') && headerStr.includes('retail')) ||
+                     (headerStr.includes('retail') && headerStr.includes('price')) ||
+                     (headerStr.includes('market') && headerStr.includes('retail'))) {
               columnMap.retailPrice = index;
-            } else if (headerStr.includes('profit') && headerStr.includes('unit')) {
+            }
+            // Se não encontrou retail price específico, aceitar apenas "retail" ou "price" (mas não "sales")
+            else if (!columnMap.retailPrice && 
+                     (headerStr === 'retail' || headerStr === 'price') && 
+                     !headerStr.includes('sales') && 
+                     !headerStr.includes('forecast')) {
+              columnMap.retailPrice = index;
+            }
+            // Unit Profit
+            else if (headerStr.includes('profit') && headerStr.includes('unit')) {
               columnMap.unitProfit = index;
-            } else if (headerStr.includes('margin') || headerStr.includes('marge')) {
+            } 
+            // Margin - pode estar como decimal ou percentual
+            else if (headerStr.includes('margin') || headerStr.includes('marge')) {
               columnMap.margin = index;
             }
           });
@@ -96,6 +132,7 @@ export const processExcelFile = (file) => {
             const description = row[columnMap.description];
             if (!description || description.toString().trim() === '') return;
             
+            // Parse dos valores com validação
             const unitCost = parseFloat(row[columnMap.unitCost]) || 0;
             const retailPrice = parseFloat(row[columnMap.retailPrice]) || 0;
             const unitsPerCase = parseInt(row[columnMap.unitsPerCase]) || 1;
@@ -104,9 +141,9 @@ export const processExcelFile = (file) => {
             if (processedCount < 3) {
               console.log(`\n📊 Produto ${processedCount + 1} (linha ${rowIndex + headerRow + 2}):`);
               console.log(`  Nome: "${description}"`);
-              console.log(`  Unit Cost: "${row[columnMap.unitCost]}" → ${unitCost}`);
-              console.log(`  Retail Price: "${row[columnMap.retailPrice]}" → ${retailPrice}`);
               console.log(`  Units per Case: "${row[columnMap.unitsPerCase]}" → ${unitsPerCase}`);
+              console.log(`  Unit Cost: "${row[columnMap.unitCost]}" → $${unitCost.toFixed(2)}`);
+              console.log(`  Retail Price: "${row[columnMap.retailPrice]}" → $${retailPrice.toFixed(2)}`);
             }
             
             // Calcular valores ausentes
@@ -117,14 +154,26 @@ export const processExcelFile = (file) => {
             const unitProfit = row[columnMap.unitProfit] ? 
               parseFloat(row[columnMap.unitProfit]) : 
               retailPrice - unitCost;
-              
-            const margin = unitCost > 0 ? 
-              Math.round((unitProfit / unitCost) * 100) : 0;
+            
+            // Calcular margem - CORRIGIDO: verificar se já está em percentual ou decimal
+            let margin = 0;
+            if (columnMap.margin !== undefined && row[columnMap.margin]) {
+              const marginValue = parseFloat(row[columnMap.margin]);
+              // Se o valor é menor que 1, provavelmente está em formato decimal (0.27 = 27%)
+              if (marginValue < 1) {
+                margin = Math.round(marginValue * 100);
+              } else {
+                margin = Math.round(marginValue);
+              }
+            } else if (unitCost > 0) {
+              // Calcular margem: (Preço - Custo) / Custo * 100
+              margin = Math.round((unitProfit / unitCost) * 100);
+            }
             
             // Debug dos cálculos dos primeiros 3 produtos
             if (processedCount < 3) {
-              console.log(`  Case Cost: ${caseCost}`);
-              console.log(`  Unit Profit: ${unitProfit}`);
+              console.log(`  Case Cost: $${caseCost.toFixed(2)}`);
+              console.log(`  Unit Profit: $${unitProfit.toFixed(2)}`);
               console.log(`  Margin: ${margin}%`);
             }
             
@@ -135,10 +184,10 @@ export const processExcelFile = (file) => {
               barcode: row[columnMap.barcode] ? row[columnMap.barcode].toString() : '',
               category: sheetName,
               unitsPerCase: unitsPerCase,
-              unitCost: unitCost,
-              caseCost: caseCost,
-              retailPrice: retailPrice,
-              unitProfit: unitProfit,
+              unitCost: unitCost.toFixed(2),
+              caseCost: caseCost.toFixed(2),
+              retailPrice: retailPrice.toFixed(2),
+              unitProfit: unitProfit.toFixed(2),
               margin: margin,
               fileName: `${String(productNumber).padStart(3, '0')}_${description.toString().toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '')}.html`
             });
