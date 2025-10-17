@@ -142,11 +142,11 @@ const CatalogViewer = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span>Coût Unitaire:</span>
-                      <span>${product.unitCost.toFixed(2)}</span>
+                      <span>${parseFloat(product.unitCost).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Coût du Case:</span>
-                      <span>${product.caseCost.toFixed(2)}</span>
+                      <span>${parseFloat(product.caseCost).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
@@ -155,11 +155,11 @@ const CatalogViewer = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between bg-yellow-100 p-2 rounded">
                       <span className="font-semibold">Prix Unitaire:</span>
-                      <span className="font-bold">${product.retailPrice.toFixed(2)}</span>
+                      <span className="font-bold">${parseFloat(product.retailPrice).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Profit Unitaire:</span>
-                      <span>${product.unitProfit.toFixed(2)}</span>
+                      <span>${parseFloat(product.unitProfit).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between bg-yellow-100 p-2 rounded">
                       <span className="font-semibold">Marge:</span>
