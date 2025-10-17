@@ -34,22 +34,32 @@ export const processExcelFile = (file) => {
           const worksheet = workbook.Sheets[sheetName];
           const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
           
-          // Encontrar linha de cabeçalho
-          let headerRow = -1;
-          for (let i = 0; i < Math.min(10, jsonData.length); i++) {
-            const row = jsonData[i];
-            if (row && row.some(cell => 
-              cell && typeof cell === 'string' && 
-              (cell.toLowerCase().includes('description') || 
-               cell.toLowerCase().includes('item') ||
-               cell.toLowerCase().includes('produto') ||
-               cell.toLowerCase().includes('units') ||
-               cell.toLowerCase().includes('unités'))
-            )) {
-              headerRow = i;
-              break;
-            }
-          }
+          // Encontrar linha de cabeçalho - MELHORADO: precisa ter pelo menos 3 colunas relevantes
+let headerRow = -1;
+for (let i = 0; i < Math.min(10, jsonData.length); i++) {
+  const row = jsonData[i];
+  if (!row) continue;
+  
+  // Contar quantas colunas relevantes tem nesta linha
+  const relevantColumns = row.filter(cell => 
+    cell && typeof cell === 'string' && 
+    (cell.toLowerCase().includes('description') || 
+     cell.toLowerCase().includes('units') ||
+     cell.toLowerCase().includes('unités') ||
+     cell.toLowerCase().includes('cost') ||
+     cell.toLowerCase().includes('price') ||
+     cell.toLowerCase().includes('retail') ||
+     cell.toLowerCase().includes('upc') ||
+     cell.toLowerCase().includes('barcode') ||
+     cell.toLowerCase().includes('gtin'))
+  ).length;
+  
+  // Só considera cabeçalho se tiver pelo menos 3 colunas relevantes
+  if (relevantColumns >= 3) {
+    headerRow = i;
+    break;
+  }
+}
           
           if (headerRow === -1) {
             console.log(`❌ Cabeçalho não encontrado na aba ${sheetName}`);
